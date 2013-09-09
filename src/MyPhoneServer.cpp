@@ -245,8 +245,30 @@ JsonMessage *MyPhoneServer::TextCallback(TextMessage *textMessage)
 	else if (!strcmp(textMessage->content,"QUIT"))
 	{
 		cout << "QUIT command received..." << endl;
+		Disconnect();
 		exit(0);
 	}
 
 	return textMessage;
+}
+
+JsonMessage *MyPhoneServer::PropertyCallback(PropertyMessage *propertyMessage)
+{
+	cout << "Received PROPERTY message: key=" << propertyMessage->key << ", value=" << propertyMessage->value << endl;
+	if (!strcmp(propertyMessage->key,"gain"))
+	{
+		camProxy->SetNormalizedGain(propertyMessage->getIntValue());
+	}
+	else if (!strcmp(propertyMessage->key,"exposure"))
+	{
+		camProxy->SetNormalizedExposure(propertyMessage->getIntValue());
+	}
+	else if (!strcmp(propertyMessage->key,"whitebalance"))
+	{
+		int r,g,b;
+		sscanf(propertyMessage->value,"%d/%d/%d",&r,&g,&b);
+		camProxy->SetNormalizedWhiteBalance(r,g,b);
+	}
+
+	return NULL;
 }

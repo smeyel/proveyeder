@@ -116,6 +116,9 @@ public:
 	/** Text callback */
 	virtual JsonMessage *TextCallback(TextMessage *textMessage);
 
+	/** PropertyMessage callback */
+	virtual JsonMessage *PropertyCallback(PropertyMessage *propertyMessage);
+
 };
 
 
