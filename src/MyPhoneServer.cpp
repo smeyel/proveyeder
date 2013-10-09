@@ -123,9 +123,18 @@ JsonMessage *MyPhoneServer::createImageMessageFromMat(Mat *image, long long time
 JsonMessage *MyPhoneServer::TakePictureCallback(TakePictureMessage *msg)
 {
 	timeMeasurement.start(TimeMeasurementCodeDefs::ImageCapture);
-	camProxy->CaptureImage(msg->desiredtimestamp);
+	bool isSuccessful = camProxy->CaptureImage(msg->desiredtimestamp);
 	//detectionCollector->ShowLocations(camProxy->lastImageTaken);	// ADDS INDICATORS!
 	timeMeasurement.finish(TimeMeasurementCodeDefs::ImageCapture);
+
+	if (!isSuccessful)
+	{
+		// Send message that there are no more frames
+		// (Possibly because an AVI file is used as input and we have reached its end.)
+		TextMessage *errorMsg = new TextMessage();
+		errorMsg->copyToContent("Error: no more input images");
+		return errorMsg;
+	}
 
 	JsonMessage *answer = createImageMessageFromMat(
 		camProxy->lastImageTaken,
@@ -139,8 +148,17 @@ JsonMessage *MyPhoneServer::SendPositionCallback(SendPositionMessage *msg)
 {
 	// Take picture
 	timeMeasurement.start(TimeMeasurementCodeDefs::ImageCapture);
-	camProxy->CaptureImage(msg->desiredtimestamp);
+	bool isSuccessful = camProxy->CaptureImage(msg->desiredtimestamp);
 	timeMeasurement.finish(TimeMeasurementCodeDefs::ImageCapture);
+
+	if (!isSuccessful)
+	{
+		// Send message that there are no more frames
+		// (Possibly because an AVI file is used as input and we have reached its end.)
+		TextMessage *errorMsg = new TextMessage();
+		errorMsg->copyToContent("Error: no more input images");
+		return errorMsg;
+	}
 
 	// Detect marker
 	detectionCollector->pointVect.clear();

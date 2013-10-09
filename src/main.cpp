@@ -11,6 +11,7 @@ MyPhoneServer server;
 
 int main(int argc, char *argv[])
 {
+	cout << "Initializing server..." << endl;
 	server.init(inifilename,argc,argv);
 
 /*	if (server.RegisterNode("avalon.aut.bme.hu","~kristof/smeyel/smeyel_reg.php?IP=127.0.0.1:6000"))	// TODO: do not hardwire the port!
