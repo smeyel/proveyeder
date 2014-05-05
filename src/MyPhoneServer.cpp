@@ -63,6 +63,9 @@ void MyPhoneServer::init(char *inifilename, int argc, char **argv)
 	tracker->setResultExporter(detectionCollector);
 	tracker->init(inifilename,true,dsize.width,dsize.height);
 	detectionCollector->cameraProxy = camProxy;	// Now it can get current timestamp and camera transformations
+
+	blobTracker = new BlobTracker();
+	blobTracker->init(camProxy);
 }
 
 JsonMessage *MyPhoneServer::PingCallback(PingMessage *msg)
@@ -163,7 +166,7 @@ JsonMessage *MyPhoneServer::SendPositionCallback(SendPositionMessage *msg)
 	// Detect marker
 	detectionCollector->pointVect.clear();
 	tracker->processFrame(*(camProxy->lastImageTaken),camProxy->camera->cameraID,(float)imageNumber);
-/*	if (camProxy->camera->getIsTSet())
+	/*	if (camProxy->camera->getIsTSet())
 	{
 		tracker->processFrame(*(camProxy->lastImageTaken),camProxy->camera->cameraID,imageNumber);
 	}
@@ -287,6 +290,83 @@ JsonMessage *MyPhoneServer::PropertyCallback(PropertyMessage *propertyMessage)
 		sscanf(propertyMessage->value,"%d/%d/%d",&r,&g,&b);
 		camProxy->SetNormalizedWhiteBalance(r,g,b);
 	}
+	else if (!strcmp(propertyMessage->key, "blobcolor"))
+	{
+		int h,s,v;
+		sscanf(propertyMessage->value, "%d/%d/%d", &h, &s, &v);
+		blobTracker->setColorBound(Vec3d(h, s, v));
+	}
 
 	return NULL;
+}
+
+
+
+JsonMessage *MyPhoneServer::StreamPositionCallback(StreamPositionMessage *streamPositionMessage)
+{
+	if (!camProxy->camera->getIsTSet())
+	{
+		TextMessage *tm = new TextMessage();
+		tm->copyToContent("You have to calibrate your camera!");
+		Send(tm);
+		delete tm;
+		tm = NULL;
+
+		return NULL;
+	}
+
+	if (streamPositionMessage->streaming == 1)
+	{
+		SOCKET sock = getSocket();
+		HANDLE thread = CreateThread(NULL, 0, StaticStreamThreadStart, (void*)sock, 0, NULL);
+		BlobTracker::getInstance()->streaming = 1;
+	}
+	else
+	{
+		BlobTracker::getInstance()->streaming = 0;
+	}
+	
+	return NULL;
+}
+
+DWORD MyPhoneServer::StaticStreamThreadStart(void* param)
+{
+	SOCKET mySock = (SOCKET)param;
+
+	while (BlobTracker::getInstance()->streaming == 1)
+	{
+		bool isSuccessful = BlobTracker::getInstance()->camProxy->CaptureImage(0);
+
+		if (!isSuccessful)
+		{
+			TextMessage *errorMsg = new TextMessage();
+			errorMsg->copyToContent("Error: no more input images");
+			return 0;
+		}
+
+		Point p = BlobTracker::getInstance()->processFrame(*(BlobTracker::getInstance()->camProxy->lastImageTaken));
+
+		if (&p != NULL)
+		{
+			Ray r = BlobTracker::getInstance()->getBlobDirection(p);
+			r.show("");
+
+			TextMessage *rayData = new TextMessage();
+
+			char buff[100];
+			sprintf(buff, "A:%lf, %lf, %lf, %lf, B:%lf, %lf, %lf, %lf",
+				r.A.val[0], r.A.val[1], r.A.val[2], r.A.val[3],
+				r.B.val[0], r.B.val[1], r.B.val[2], r.B.val[3]);
+			rayData->copyToContent(buff);
+
+			char buffer[200];
+			rayData->writeJson(buffer);
+			int len = strlen(buffer);
+
+			PlatformSpecifics::getInstance()->send(mySock, buffer, len, 0);
+			rayData->writeAux(mySock);
+		}
+	}
+
+	return 0;
 }

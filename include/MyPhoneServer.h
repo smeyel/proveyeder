@@ -9,6 +9,7 @@
 #include "DetectionResultExporterBase.h"
 #include "MarkerBase.h"
 #include "MarkerCC2Tracker.h"
+#include "BlobTracker.h"
 
 class MyPhoneServer : public PhoneServer
 {
@@ -73,6 +74,9 @@ class MyPhoneServer : public PhoneServer
 	DetectionCollector *detectionCollector;
 	TwoColorCircleMarker::MarkerCC2Tracker *tracker;
 
+	BlobTracker *blobTracker;
+
+
 	JsonMessage *createImageMessageFromMat(Mat *image, long long timestamp);
 
 public:
@@ -118,6 +122,11 @@ public:
 
 	/** PropertyMessage callback */
 	virtual JsonMessage *PropertyCallback(PropertyMessage *propertyMessage);
+
+	/** StreamPositionMessage callback */
+	virtual JsonMessage *StreamPositionCallback(StreamPositionMessage *streamPositionMessage);
+
+	static DWORD WINAPI StaticStreamThreadStart(void* param);
 
 };
 

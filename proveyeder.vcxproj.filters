@@ -21,12 +21,18 @@
     <ClCompile Include="src\MyPhoneServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\BlobTracker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\myconfigmanager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\MyPhoneServer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\BlobTracker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
